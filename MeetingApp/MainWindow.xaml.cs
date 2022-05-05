@@ -36,11 +36,15 @@ namespace MeetingApp
             type1.Items.Add("Деловая");
             type1.Text = "Любой тип";
 
+            periods.Items.Add("День");
+            periods.Items.Add("Неделя");
+            periods.Items.Add("Всё время");
+            periods.Text = "Всё время";
+
             Show_List();
         }
         string path = "Data.dat";
         CreateWindow CW = new CreateWindow();
-        //CreateWindow EW = new CreateWindow(name);
         class MeetingData
         {
             public MeetingData(string Name, string Description, string Type, string Date)
@@ -67,7 +71,7 @@ namespace MeetingApp
 
             if (File.Exists(path))
             {
-                //try
+                try
                 {
                     using (StreamReader sr = new StreamReader(path))
                     {
@@ -76,16 +80,13 @@ namespace MeetingApp
                         {
                             info = line.Split('|');
                             if (info[0].Trim() != "" && info[2].Trim() != "" && info[3].Trim() != "")
-                                if(type1.Text == "Любой тип" && (info[0].Contains(Search.Text) || info[1].Contains(Search.Text) || info[3].Contains(Search.Text)))
+                                if ((type1.Text != "Любой тип" && info[2].Contains(type1.Text) || (type1.Text == "Любой тип")) && ((periods.Text == "День" && DateTime.Parse(info[3]) > DateTime.Now && DateTime.Parse(info[3]) < DateTime.Now.AddDays(1)) || (periods.Text == "Неделя" && DateTime.Parse(info[3]) > DateTime.Now && DateTime.Parse(info[3]) < DateTime.Now.AddDays(7)) || (periods.Text == "Всё время")) && (info[0].Contains(Search.Text) || info[1].Contains(Search.Text) || info[3].Contains(Search.Text)))
                                     result.Add(new MeetingData(info[0], info[1], info[2], info[3]));
-                                else if (type1.Text != "Любой тип" && (info[0].Contains(Search.Text) || info[1].Contains(Search.Text) || info[3].Contains(Search.Text)))
-                                    result.Add(new MeetingData(info[0], info[1], info[2], info[3]));
-
                         }
                         sr.Close();
                     }
                 }
-                //catch 
+                catch 
                 {
                     
                 }
@@ -134,12 +135,6 @@ namespace MeetingApp
             DataGrid1.Columns[3].Width = 100;
             DataGrid1.Columns[1].Width = 308;
 
-            /*int w1 = Convert.ToInt32(DataGrid1.Columns[0].ActualWidth);
-            int w2 = Convert.ToInt32(DataGrid1.Columns[2].ActualWidth);
-            int w3 = Convert.ToInt32(DataGrid1.Columns[3].ActualWidth);
-            int w0 = Convert.ToInt32(DataGrid1.ActualWidth);
-            //DataGrid1.Columns[1].MaxWidth =     ;
-            debug.Content = $"{w1} {w2} {w3} {w0} {DataGrid1.Columns[0].CellStyle}";//*/
             DataGrid1.Columns[0].IsReadOnly = false;
 
         }
@@ -147,7 +142,6 @@ namespace MeetingApp
         private void Delete_Click(object sender, RoutedEventArgs e)
         {
             int ind = DataGrid1.SelectedIndex;
-            //DataGridCell test = new DataGridCell();
             if (MessageBox.Show("Вы уверены, что хотите удалить встречу?", "Удаление", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes)
             {
                 string t = (DataGrid1.Columns[3].GetCellContent(DataGrid1.Items[ind]) as TextBlock).Text.ToString();
@@ -166,7 +160,6 @@ namespace MeetingApp
                         else
                         {
                             txt_new += meetings[i] + "\n";
-                            //debug.Content = txt_new;
                         }
                     }//*/
                     File.WriteAllText(path, string.Empty);
@@ -187,7 +180,6 @@ namespace MeetingApp
                 }
             }
             Show_List();
-            //debug.Content = $"{ind} {t}";
         }
 
         private void Edit_Click(object sender, RoutedEventArgs e)
@@ -200,9 +192,14 @@ namespace MeetingApp
                 string type = (DataGrid1.Columns[2].GetCellContent(DataGrid1.Items[ind]) as TextBlock).Text.ToString();
                 string t = (DataGrid1.Columns[3].GetCellContent(DataGrid1.Items[ind]) as TextBlock).Text.ToString();
 
-                CreateWindow EW = new CreateWindow(name, description, type, t);
-                EW.Owner = this;
-                EW.ShowDialog();
+                if (DateTime.Parse(t) > DateTime.Now)
+                {
+                    CreateWindow EW = new CreateWindow(name, description, type, t);
+                    EW.Owner = this;
+                    EW.ShowDialog();
+                }
+                else
+                    MessageBox.Show("Нельзя изменить прошедшую встречу.", "Внимание!", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
             catch
             {

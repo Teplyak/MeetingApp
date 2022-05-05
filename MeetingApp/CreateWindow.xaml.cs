@@ -58,9 +58,9 @@ namespace MeetingApp
             string[] clocks = t.Remove(0, 11).Split(':');
             hours.Text = $"{clocks[0]}";
             minutes.Text = $"{clocks[1]}";
-            debug.Content = t;
         }
         string path = "Data.dat";
+        bool is_free;
 
         public void clock_start()
         {
@@ -95,18 +95,41 @@ namespace MeetingApp
             }
         }
 
+        public void free_time(string dates)
+        {
+            using (StreamReader sr = new StreamReader(path))
+            {
+                is_free = true;
+                String line;
+                while ((line = sr.ReadLine()) != null)
+                {
+                    if (line != "" && line.Contains(dates))
+                        is_free = false;
+                }
+                sr.Close();
+            }
+        }
+
         private void ButtonCreateSave_Click(object sender, RoutedEventArgs e)
         {
             //*
-            FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
             {
                 data_to_text();
                 if (MeetingName.Text.Trim() != "" && TypeMeeting.Text.Trim() != "" && MeetingDateTime.Text.Trim() != "" && MeetingDateTime.Text.Length == 16)
                 {
-                    StreamWriter sw = new StreamWriter(fs);
-                    sw.WriteLine($"{MeetingName.Text.Trim()}|{MeetingDescription.Text} |{TypeMeeting.Text.Trim()}|{MeetingDateTime.Text.Trim()}");
-                    sw.Close();
-                    //debug.Content = MeetingDateTime.Text.Trim();
+                    free_time(MeetingDateTime.Text.Trim());
+                    FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
+                    if (is_free == true && DateTime.Parse(MeetingDateTime.Text.Trim()) > DateTime.Now)
+                    {
+                        StreamWriter sw = new StreamWriter(fs);
+                        sw.WriteLine($"{MeetingName.Text.Trim()}|{MeetingDescription.Text} |{TypeMeeting.Text.Trim()}|{MeetingDateTime.Text.Trim()}");
+                        sw.Close();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Нельзя создать несколько встреч на одно и то же время или в прошлом.", "Неверное время!", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    fs.Close();//*/
                 }
                 else
                 { 
@@ -114,7 +137,6 @@ namespace MeetingApp
                     return;
                 }
             }
-            fs.Close();//*/
             (this.Owner as MainWindow).Show_List();
 
             this.Hide();
@@ -131,29 +153,37 @@ namespace MeetingApp
             string text = File.ReadAllText(path);
             string[] meeting = text.Split('\n');
             data_to_text();
-            for (int i = 0; i < meeting.Length; i++)
-            {
-                if (meeting[i].Contains(datetime))
-                {
-                    txt_new += $"{MeetingName.Text}|{MeetingDescription.Text}|{TypeMeeting.Text}|{MeetingDateTime.Text}\n";
-                }
-                else
-                {
-                    txt_new +=  meeting[i]+ "\n";
-                }
-            }
-            File.WriteAllText(path, string.Empty);
-            while (txt_new.Contains($"\n\n"))
-            {
-                txt_new = txt_new.Replace($"\n\n", $"\n");
-            }
 
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(path))
+            if (DateTime.Parse(MeetingDateTime.Text.Trim()) > DateTime.Now)
             {
-                file.Write(txt_new);
+                for (int i = 0; i < meeting.Length; i++)
+                {
+                    if (meeting[i].Contains(datetime))
+                    {
+                        txt_new += $"{MeetingName.Text}|{MeetingDescription.Text}|{TypeMeeting.Text}|{MeetingDateTime.Text}\n";
+                    }
+                    else
+                    {
+                        txt_new += meeting[i] + "\n";
+                    }
+                }
+                File.WriteAllText(path, string.Empty);
+                while (txt_new.Contains($"\n\n"))
+                {
+                    txt_new = txt_new.Replace($"\n\n", $"\n");
+                }
+
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(path))
+                {
+                    file.Write(txt_new);
+                }
+                (this.Owner as MainWindow).Show_List();
+                this.Hide();
             }
-            (this.Owner as MainWindow).Show_List();
-            this.Hide();
+            else
+            {
+                MessageBox.Show("Нельзя перенести встречу в прошлое.", "Неверное время!", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
     }
